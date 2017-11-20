@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace ConsoleApp1
 {
-    public class ReceitDetail
+    public class ReceiptDetail
     {
         //Fields
         [JsonProperty("nn")]
@@ -27,7 +27,7 @@ namespace ConsoleApp1
 
         }//end of constructor
 
-        public ReceitDetail(int nn, int sn, string status, string pown, string note)
+        public ReceiptDetail(int nn, int sn, string status, string pown, string note)
         {
             this.nn = nn;
             this.sn = sn;
