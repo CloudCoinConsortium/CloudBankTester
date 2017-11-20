@@ -1,6 +1,8 @@
 using System;
+using banktesterforms;
 
-namespace ConsoleApp1
+
+namespace CloudBankTester
 {
     class Program
     {
@@ -31,7 +33,7 @@ namespace ConsoleApp1
         } // End main
 
         /* STATIC METHODS */
-        public static void run()
+        public static async void run()
         {
             bool restart = false;
             while (!restart)
@@ -63,7 +65,7 @@ namespace ConsoleApp1
                         showCoins();
                         break;
                     case 3:
-                        depositAsync();
+                        await depositAsync();
                         break;
                     case 4:
                         withdraw();
@@ -128,7 +130,9 @@ namespace ConsoleApp1
         {
             CloudBankUtils sender = new CloudBankUtils( myKeys);
             Console.Out.WriteLine("What is the path to your stack file?");
-            string path = reader.readString();
+            //string path = reader.readString();
+            string path = AppDomain.CurrentDomain.BaseDirectory ;
+            path += reader.readString();
             Console.Out.WriteLine("Loading " + path);
             sender.loadStackFromFile(path);
             await sender.sendStackToCloudBank(publicKey);
