@@ -22,7 +22,7 @@ namespace ConsoleApp1
 
 
         //Constructors
-        public ReceitDetail()
+        public ReceiptDetail()
         {
 
         }//end of constructor
