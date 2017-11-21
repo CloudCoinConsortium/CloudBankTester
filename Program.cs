@@ -20,6 +20,7 @@ namespace CloudBankTester
         public static string privateKey = "";
         public static string email = "";
         public static BankKeys myKeys;
+        private static CloudBankUtils receiptHolder;
 
 
 
@@ -62,13 +63,13 @@ namespace CloudBankTester
                         loadKeys();
                         break;
                     case 2:
-                        showCoins();
+                        await showCoins();
                         break;
                     case 3:
-                        await depositAsync();
+                        receiptHolder = await depositAsync();
                         break;
                     case 4:
-                        withdraw();
+                        await withdraw();
                         break;
                     case 5:
                         receipt();
@@ -113,7 +114,7 @@ namespace CloudBankTester
 
         /* Show coins will populate the CloudBankUtils with the totals of each denominations
          These totals are public properties that can be accessed */
-        static async void showCoins()
+        static async System.Threading.Tasks.Task showCoins()
         {
             CloudBankUtils cbu = new CloudBankUtils(myKeys);
             await cbu.showCoins();
@@ -126,7 +127,7 @@ namespace CloudBankTester
 
 
         /* Deposit allow you to send a stack file to the CloudBank */
-        static async System.Threading.Tasks.Task depositAsync()
+        static async System.Threading.Tasks.Task<CloudBankUtils> depositAsync()
         {
             CloudBankUtils sender = new CloudBankUtils( myKeys);
             Console.Out.WriteLine("What is the path to your stack file?");
@@ -137,10 +138,24 @@ namespace CloudBankTester
             sender.loadStackFromFile(path);
             await sender.sendStackToCloudBank(publicKey);
             await sender.getReceipt(publicKey);
+            return sender;
         }//end deposit
 
 
-        static void withdraw() { }//end deposit
-        static void receipt() { }//end deposit
+        static async System.Threading.Tasks.Task withdraw()
+        {
+            CloudBankUtils receiver = new CloudBankUtils(myKeys);
+            Console.Out.WriteLine("How many CloudCoins are you withdrawing?");
+            int amount = reader.readInt();
+            await receiver.getStackFromCloudBank(amount);
+            receiver.saveStackToFile(AppDomain.CurrentDomain.BaseDirectory);
+        }//end deposit
+        static void receipt()
+        {
+            if (receiptHolder == null)
+                Console.Out.WriteLine("There has not been a recent deposit. So no receipt can be shown.");
+            else
+                Console.Out.WriteLine(receiptHolder.interpretReceipt());
+        }//end deposit
     }
 }

@@ -5,7 +5,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace ConsoleApp1
+namespace CloudBankTester
 {
     class CloudBankUtils
     {
@@ -93,9 +93,10 @@ namespace ConsoleApp1
 
             Console.Out.WriteLine("CloudBank Response: " + CloudBankFeedback);
             var cbf = JsonConvert.DeserializeObject<Dictionary<string, string>>(CloudBankFeedback);
-            rawReceipt = cbf["receipt"];
-            receiptNumber = cbf["rn"];
-            Console.Out.WriteLine("Raw Receipt: " + rawReceipt);
+            //rawReceipt = cbf["receipt"];
+            //receiptNumber = cbf["rn"];
+            receiptNumber = cbf["receipt"];
+            //Console.Out.WriteLine("Raw Receipt: " + rawReceipt);
         }//End send stack
 
 
