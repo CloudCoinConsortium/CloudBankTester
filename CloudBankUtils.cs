@@ -104,8 +104,8 @@ namespace CloudBankTester
 
         public async Task getReceipt(string toPublicURL)
         {
-            Console.Out.WriteLine("Geting Receipt: " + "https://" + toPublicURL + "/" + keys.privatekey + "/Reciept" + receiptNumber + ".json");
-            var result_receipt = await cli.GetAsync("https://" + toPublicURL + "/" + keys.privatekey + "/Reciept" + receiptNumber + ".json");
+            Console.Out.WriteLine("Geting Receipt: " + "https://" + toPublicURL + "/" + keys.privatekey + "/Receipts/" + receiptNumber + ".json");
+            var result_receipt = await cli.GetAsync("https://" + toPublicURL + "/" + keys.privatekey + "/Receipts/" + receiptNumber + ".json");
            
             rawReceipt = await result_receipt.Content.ReadAsStringAsync();
             Console.Out.WriteLine("Raw Receipt: " + rawReceipt);
@@ -113,7 +113,8 @@ namespace CloudBankTester
 
         public async Task getStackFromCloudBank( int amountToWithdraw)
         {
-                var result_stack = await cli.GetAsync("https://" + keys.publickey + "/withdraw_one_stack.aspx?amount=" + amountToWithdraw + "&k=" + keys.privatekey);
+            totalCoinsWithdrawn = amountToWithdraw;
+            var result_stack = await cli.GetAsync("https://" + keys.publickey + "/withdraw_account.aspx?amount=" + amountToWithdraw + "&k=" + keys.privatekey);
                 rawStackFromWithdrawal = await result_stack.Content.ReadAsStringAsync();
                 //rawStack = GET(cloudBankURL, receiptNumber);
         }//End get stack from cloudbank
@@ -206,7 +207,7 @@ namespace CloudBankTester
 
         public string getStackName()
         {
-            return totalCoinsWithdrawn + ".cloudcoin." + receiptNumber + ".stack";
+            return totalCoinsWithdrawn + ".CloudCoin." + receiptNumber + ".stack";
         }
 
         public async Task transferCloudCoins( string toPublicKey, int coinsToSend) {

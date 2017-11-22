@@ -1,6 +1,6 @@
 using System;
 using banktesterforms;
-
+using System.Threading.Tasks;
 
 namespace CloudBankTester
 {
@@ -29,12 +29,12 @@ namespace CloudBankTester
         public static void Main(String[] args)
         {
             printWelcome();
-            run(); // Makes all commands available and loops
+            run().Wait(); // Makes all commands available and loops
             Console.Out.WriteLine("Thank you for using CloudBank Tester. Goodbye.");
         } // End main
 
         /* STATIC METHODS */
-        public static async void run()
+        public static async Task run()
         {
             bool restart = false;
             while (!restart)
@@ -54,7 +54,7 @@ namespace CloudBankTester
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.Out.Write(prompt);
                 Console.ForegroundColor = ConsoleColor.White;
-                int commandRecieved = reader.readInt(1,5);
+                int commandRecieved = reader.readInt(1,6);
 
 
                 switch (commandRecieved)
@@ -103,7 +103,7 @@ namespace CloudBankTester
 
         static void loadKeys()
         {
-            publicKey = "preston.CloudCoin.global";
+            publicKey = "Preston.CloudCoin.global";
             privateKey = "0DECE3AF-43EC-435B-8C39-E2A5D0EA8676";
             email = "Preston@what.com";
             Console.Out.WriteLine("Public key is " + publicKey );
@@ -114,7 +114,7 @@ namespace CloudBankTester
 
         /* Show coins will populate the CloudBankUtils with the totals of each denominations
          These totals are public properties that can be accessed */
-        static async System.Threading.Tasks.Task showCoins()
+        static async Task showCoins()
         {
             CloudBankUtils cbu = new CloudBankUtils(myKeys);
             await cbu.showCoins();
@@ -127,7 +127,7 @@ namespace CloudBankTester
 
 
         /* Deposit allow you to send a stack file to the CloudBank */
-        static async System.Threading.Tasks.Task<CloudBankUtils> depositAsync()
+        static async Task<CloudBankUtils> depositAsync()
         {
             CloudBankUtils sender = new CloudBankUtils( myKeys);
             Console.Out.WriteLine("What is the path to your stack file?");
@@ -142,9 +142,14 @@ namespace CloudBankTester
         }//end deposit
 
 
-        static async System.Threading.Tasks.Task withdraw()
+        static async Task withdraw()
         {
-            CloudBankUtils receiver = new CloudBankUtils(myKeys);
+            CloudBankUtils receiver;
+            if (receiptHolder == null)
+                receiver = new CloudBankUtils(myKeys);
+            else
+                receiver = receiptHolder;
+
             Console.Out.WriteLine("How many CloudCoins are you withdrawing?");
             int amount = reader.readInt();
             await receiver.getStackFromCloudBank(amount);
