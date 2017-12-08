@@ -1,6 +1,7 @@
 using System;
 using banktesterforms;
 using System.Threading.Tasks;
+using System.Net.Http;
 
 namespace CloudBankTester
 {
@@ -12,15 +13,17 @@ namespace CloudBankTester
         //  public static String rootFolder = System.getProperty("user.dir") + File.separator +"bank" + File.separator ;
         public static String rootFolder = AppDomain.CurrentDomain.BaseDirectory;
         public static String prompt = "Start Mode> ";
-        public static String[] commandsAvailable = new String[] { "Load Bank Keys", "Show Coins", "Deposite Coin", "Withdraw Coins","Look at Receipt", "quit" };
+        public static String[] commandsAvailable = new String[] { "Load Bank Keys", "Show Coins", "Deposite Coin", "Withdraw Coins","Look at Receipt", "write Check", "quit" };
    //public static int timeout = 10000; // Milliseconds to wait until the request is ended. 
        // public static FileUtils fileUtils = new FileUtils(rootFolder, bank);
         public static Random myRandom = new Random();
         public static string publicKey = "";
         public static string privateKey = "";
         public static string email = "";
+        public static string sign = "Preston Linderman";
         public static BankKeys myKeys;
         private static CloudBankUtils receiptHolder;
+        private static HttpClient cli = new HttpClient();
 
 
 
@@ -75,6 +78,9 @@ namespace CloudBankTester
                         receipt();
                         break;
                     case 6:
+                        writeCheck();
+                        break;
+                    case 7:
                         Console.Out.WriteLine("Goodbye!");
                         Environment.Exit(0);
                         break;
@@ -105,7 +111,7 @@ namespace CloudBankTester
         {
             publicKey = "Preston.CloudCoin.global";
             privateKey = "0DECE3AF-43EC-435B-8C39-E2A5D0EA8676";
-            email = "Preston@what.com";
+            email = "Preston@ChicoHolo.com";
             Console.Out.WriteLine("Public key is " + publicKey );
             Console.Out.WriteLine("Private key is " + privateKey);
             Console.Out.WriteLine("Email is " + email);
@@ -162,5 +168,18 @@ namespace CloudBankTester
             else
                 Console.Out.WriteLine(receiptHolder.interpretReceipt());
         }//end deposit
+
+        static async Task writeCheck()
+        {
+            Console.Out.WriteLine("How many CloudCoins are you withdrawing?");
+            int amount = reader.readInt();
+            Console.Out.WriteLine("Who are you Paying?");
+            string payto = reader.readString();
+            Console.Out.WriteLine("Who is being Emailed?");
+            string emailto = reader.readString();
+            var request = await cli.GetAsync("https://"+publicKey+"/write_check.aspx?pk=" + privateKey + "&action=email&amount="+amount+"&emailto="+emailto+"&payto="+payto+"&from="+email+"&signby="+sign);
+            string response = await request.Content.ReadAsStringAsync();
+            Console.Out.WriteLine(response);
+        }
     }
 }

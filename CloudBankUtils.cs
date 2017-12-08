@@ -169,7 +169,7 @@ namespace CloudBankTester
                 for (int i = 0; i < deserialReceipt.rd.Length; i++)
                     if (deserialReceipt.rd[i].status == "authentic")
                         totalCoinsWithdrawn += getDenomination(deserialReceipt.rd[i].sn);
-                var result_stack = await cli.GetAsync(keys.publickey + "/withdraw_one_stack.aspx?amount=" + totalCoinsWithdrawn + "&k=" + keys.privatekey);
+                var result_stack = await cli.GetAsync(keys.publickey + "/withdraw_account.aspx?amount=" + totalCoinsWithdrawn + "&k=" + keys.privatekey);
                 rawStackFromWithdrawal = await result_stack.Content.ReadAsStringAsync();
                 //rawStackFromWithdrawal = GET(cloudBankURL, receiptNumber);
             }
