@@ -13,7 +13,7 @@ namespace CloudBankTester
         //  public static String rootFolder = System.getProperty("user.dir") + File.separator +"bank" + File.separator ;
         public static String rootFolder = AppDomain.CurrentDomain.BaseDirectory;
         public static String prompt = "Start Mode> ";
-        public static String[] commandsAvailable = new String[] { "Load Bank Keys", "Show Coins", "Deposite Coin", "Withdraw Coins","Look at Receipt", "write Check", "quit" };
+        public static String[] commandsAvailable = new String[] { "Load Bank Keys", "Show Coins", "Deposite Coin", "Withdraw Coins","Look at Receipt", "Write Check","Get Check", "quit" };
    //public static int timeout = 10000; // Milliseconds to wait until the request is ended. 
        // public static FileUtils fileUtils = new FileUtils(rootFolder, bank);
         public static Random myRandom = new Random();
@@ -78,9 +78,12 @@ namespace CloudBankTester
                         receipt();
                         break;
                     case 6:
-                        writeCheck();
+                        await writeCheck();
                         break;
                     case 7:
+                        await GetCheck();
+                        break;
+                    case 8:
                         Console.Out.WriteLine("Goodbye!");
                         Environment.Exit(0);
                         break;
@@ -178,6 +181,15 @@ namespace CloudBankTester
             Console.Out.WriteLine("Who is being Emailed?");
             string emailto = reader.readString();
             var request = await cli.GetAsync("https://"+publicKey+"/write_check.aspx?pk=" + privateKey + "&action=email&amount="+amount+"&emailto="+emailto+"&payto="+payto+"&from="+email+"&signby="+sign);
+            string response = await request.Content.ReadAsStringAsync();
+            Console.Out.WriteLine(response);
+        }
+
+        static async Task GetCheck()
+        {
+            Console.Out.WriteLine("What is the Check's Id?");
+            string id = reader.readString();
+            var request = await cli.GetAsync("https://" + publicKey + "/checks.aspx?id="+id+"&receive=json");
             string response = await request.Content.ReadAsStringAsync();
             Console.Out.WriteLine(response);
         }
