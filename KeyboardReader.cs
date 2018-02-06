@@ -3,7 +3,7 @@ using System.Text;
 using System.Linq;
 
 
-namespace ConsoleApp1
+namespace CloudBankTester
 {
     public class KeyboardReader
     {

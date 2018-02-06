@@ -112,7 +112,7 @@ namespace CloudBankTester
 
         static void loadKeys()
         {
-            publicKey = "Preston.CloudCoin.global";
+            publicKey = "bank.CloudCoin.global";
             privateKey = "0DECE3AF-43EC-435B-8C39-E2A5D0EA8676";
             email = "Preston@ChicoHolo.com";
             Console.Out.WriteLine("Public key is " + publicKey );

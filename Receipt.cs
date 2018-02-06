@@ -1,5 +1,5 @@
 using Newtonsoft.Json;
-namespace ConsoleApp1
+namespace CloudBankTester
 {
     public class Receipt
     {

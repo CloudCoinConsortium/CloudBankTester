@@ -1,0 +1,6 @@
+S:\source\repos\CloudBankTester\CloudBankTester\bin\Debug\netstandard2.0\CloudBankTester.deps.json
+S:\source\repos\CloudBankTester\CloudBankTester\bin\Debug\netstandard2.0\CloudBankTester.dll
+S:\source\repos\CloudBankTester\CloudBankTester\obj\Debug\netstandard2.0\CloudBankTester.csprojResolveAssemblyReference.cache
+S:\source\repos\CloudBankTester\CloudBankTester\obj\Debug\netstandard2.0\CloudBankTester.csproj.CoreCompileInputs.cache
+S:\source\repos\CloudBankTester\CloudBankTester\obj\Debug\netstandard2.0\CloudBankTester.AssemblyInfoInputs.cache
+S:\source\repos\CloudBankTester\CloudBankTester\obj\Debug\netstandard2.0\CloudBankTester.AssemblyInfo.cs
