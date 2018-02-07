@@ -1,7 +1,7 @@
 using System;
-using banktesterforms;
 using System.Threading.Tasks;
 using System.Net.Http;
+using System.Collections.Generic;
 
 namespace CloudBankTester
 {
@@ -141,7 +141,7 @@ namespace CloudBankTester
             CloudBankUtils sender = new CloudBankUtils( myKeys);
             Console.Out.WriteLine("What is the path to your stack file?");
             //string path = reader.readString();
-            string path = AppDomain.CurrentDomain.BaseDirectory ;
+            string path = ""; //AppDomain.CurrentDomain.BaseDirectory ;
             path += reader.readString();
             Console.Out.WriteLine("Loading " + path);
             sender.loadStackFromFile(path);
@@ -180,8 +180,11 @@ namespace CloudBankTester
             string payto = reader.readString();
             Console.Out.WriteLine("Who is being Emailed?");
             string emailto = reader.readString();
-            var request = await cli.GetAsync("https://"+publicKey+"/write_check.aspx?pk=" + privateKey + "&action=email&amount="+amount+"&emailto="+emailto+"&payto="+payto+"&from="+email+"&signby="+sign);
-            string response = await request.Content.ReadAsStringAsync();
+            //var request = await cli.GetAsync("https://"+publicKey+"/write_check.aspx?pk=" + privateKey + "&action=email&amount="+amount+"&emailto="+emailto+"&payto="+payto+"&from="+email+"&signby="+sign);
+            var formContent = new FormUrlEncodedContent(new[] { new KeyValuePair<string, string>("pk", privateKey) });
+            var result = await cli.PostAsync("https://" + publicKey + "/service/write_check.aspx?action=email&amount=" + amount + "&emailto=" + emailto + "&payto=" + payto + "&from=" + email + "&signby=" + sign, formContent);
+            
+            string response = await result.Content.ReadAsStringAsync();
             Console.Out.WriteLine(response);
         }
 
@@ -189,7 +192,7 @@ namespace CloudBankTester
         {
             Console.Out.WriteLine("What is the Check's Id?");
             string id = reader.readString();
-            var request = await cli.GetAsync("https://" + publicKey + "/checks.aspx?id="+id+"&receive=json");
+            var request = await cli.GetAsync("https://" + publicKey + "/service/checks.aspx?id="+id+"&receive=json");
             string response = await request.Content.ReadAsStringAsync();
             Console.Out.WriteLine(response);
         }
