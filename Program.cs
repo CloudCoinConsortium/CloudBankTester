@@ -1,7 +1,8 @@
 using System;
+using banktesterforms;
 using System.Threading.Tasks;
 using System.Net.Http;
-using System.Collections.Generic;
+using System.IO;
 
 namespace CloudBankTester
 {
@@ -13,7 +14,7 @@ namespace CloudBankTester
         //  public static String rootFolder = System.getProperty("user.dir") + File.separator +"bank" + File.separator ;
         public static String rootFolder = AppDomain.CurrentDomain.BaseDirectory;
         public static String prompt = "Start Mode> ";
-        public static String[] commandsAvailable = new String[] { "Load Bank Keys", "Show Coins", "Deposite Coin", "Withdraw Coins","Look at Receipt", "Write Check","Get Check", "quit" };
+        public static String[] commandsAvailable = new String[] { "Load Bank Keys", "Show Coins", "Deposite Coin", "Withdraw Coins","Look at Receipt", "Write Check","Get Check","Connect To Trusted Trade", "Send Coins Over Trusted Trade", "quit" };
    //public static int timeout = 10000; // Milliseconds to wait until the request is ended. 
        // public static FileUtils fileUtils = new FileUtils(rootFolder, bank);
         public static Random myRandom = new Random();
@@ -24,6 +25,7 @@ namespace CloudBankTester
         public static BankKeys myKeys;
         private static CloudBankUtils receiptHolder;
         private static HttpClient cli = new HttpClient();
+        private static TrustedTradeSocket tts = new TrustedTradeSocket("wss://escrow.cloudcoin.digital/ws/", 10, OnWord, OnStatusChange, OnReceive, OnProgress);
 
 
 
@@ -57,7 +59,7 @@ namespace CloudBankTester
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.Out.Write(prompt);
                 Console.ForegroundColor = ConsoleColor.White;
-                int commandRecieved = reader.readInt(1,6);
+                int commandRecieved = reader.readInt(1,10);
 
 
                 switch (commandRecieved)
@@ -75,7 +77,7 @@ namespace CloudBankTester
                         await withdraw();
                         break;
                     case 5:
-                        receipt();
+                        await receipt2();
                         break;
                     case 6:
                         await writeCheck();
@@ -84,6 +86,12 @@ namespace CloudBankTester
                         await GetCheck();
                         break;
                     case 8:
+                        await tts.Connect();
+                        break;
+                    case 9:
+                        await SendCoinsTT();
+                        break;
+                    case 10:
                         Console.Out.WriteLine("Goodbye!");
                         Environment.Exit(0);
                         break;
@@ -141,7 +149,7 @@ namespace CloudBankTester
             CloudBankUtils sender = new CloudBankUtils( myKeys);
             Console.Out.WriteLine("What is the path to your stack file?");
             //string path = reader.readString();
-            string path = ""; //AppDomain.CurrentDomain.BaseDirectory ;
+            string path = AppDomain.CurrentDomain.BaseDirectory ;
             path += reader.readString();
             Console.Out.WriteLine("Loading " + path);
             sender.loadStackFromFile(path);
@@ -172,6 +180,12 @@ namespace CloudBankTester
                 Console.Out.WriteLine(receiptHolder.interpretReceipt());
         }//end deposit
 
+        static async Task receipt2()
+        {
+            var x = new CloudBankUtils(myKeys);
+            await x.getReceipt(myKeys.publickey);
+        }
+
         static async Task writeCheck()
         {
             Console.Out.WriteLine("How many CloudCoins are you withdrawing?");
@@ -180,11 +194,8 @@ namespace CloudBankTester
             string payto = reader.readString();
             Console.Out.WriteLine("Who is being Emailed?");
             string emailto = reader.readString();
-            //var request = await cli.GetAsync("https://"+publicKey+"/write_check.aspx?pk=" + privateKey + "&action=email&amount="+amount+"&emailto="+emailto+"&payto="+payto+"&from="+email+"&signby="+sign);
-            var formContent = new FormUrlEncodedContent(new[] { new KeyValuePair<string, string>("pk", privateKey) });
-            var result = await cli.PostAsync("https://" + publicKey + "/service/write_check.aspx?action=email&amount=" + amount + "&emailto=" + emailto + "&payto=" + payto + "&from=" + email + "&signby=" + sign, formContent);
-            
-            string response = await result.Content.ReadAsStringAsync();
+            var request = await cli.GetAsync("https://"+publicKey+"/write_check.aspx?pk=" + privateKey + "&action=email&amount="+amount+"&emailto="+emailto+"&payto="+payto+"&from="+email+"&signby="+sign);
+            string response = await request.Content.ReadAsStringAsync();
             Console.Out.WriteLine(response);
         }
 
@@ -192,9 +203,47 @@ namespace CloudBankTester
         {
             Console.Out.WriteLine("What is the Check's Id?");
             string id = reader.readString();
-            var request = await cli.GetAsync("https://" + publicKey + "/service/checks.aspx?id="+id+"&receive=json");
+            var request = await cli.GetAsync("https://" + publicKey + "/checks.aspx?id="+id+"&receive=json");
             string response = await request.Content.ReadAsStringAsync();
             Console.Out.WriteLine(response);
+        }
+
+        static async Task SendCoinsTT()
+        {
+            Console.Out.WriteLine("What is the recipients secred word?");
+            string word = reader.readString();
+            Console.Out.WriteLine("What is the path to your stack file?");
+            //string path = reader.readString();
+            string path = AppDomain.CurrentDomain.BaseDirectory;
+            path += reader.readString();
+            Console.Out.WriteLine("Loading " + path);
+            string stack = File.ReadAllText(path);
+            await tts.SendCoins(word, stack);
+        }
+
+        static bool OnProgress(string i)
+        {
+            Console.WriteLine("Progress" + i + "%");
+            return true;
+        }
+
+        static bool OnWord(string word)
+        {
+            tts.secretWord = word;
+            Console.WriteLine("word: " + word);
+            return true;
+        }
+
+        static bool OnReceive(string hash)
+        {
+            Console.WriteLine("https://escrow.cloudcoin.digital/cc.php?h=" + hash);
+            return true;
+        }
+
+        static bool OnStatusChange()
+        {
+            Console.WriteLine("Status Changed");
+            return true;
         }
     }
 }

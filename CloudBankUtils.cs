@@ -7,13 +7,9 @@ using Newtonsoft.Json;
 
 namespace CloudBankTester
 {
-    interface IAccessCloudBank
-    {
-        BankKeys LoadKeysFromFile(string filename);
-        CloudBankUtils cloudBankUtils { get; }
-    }
+    
 
-    class CloudBankUtils
+    class CloudBankUtils : ICloudBankUtils
     {
         //Fields
         private BankKeys keys;
@@ -23,11 +19,11 @@ namespace CloudBankTester
         private HttpClient cli;
         private string receiptNumber;
         private int totalCoinsWithdrawn;
-        public int onesInBank;
-        public int fivesInBank;
-        public int twentyFivesInBank;
-        public int hundresInBank;
-        public int twohundredfiftiesInBank;
+        public int onesInBank { get; private set; }
+        public int fivesInBank { get; private set; }
+        public int twentyFivesInBank { get; private set; }
+        public int hundresInBank { get; private set; }
+        public int twohundredfiftiesInBank { get; private set; }
 
 
         //Constructor
@@ -45,67 +41,86 @@ namespace CloudBankTester
 
 
         //Methods
-        public async Task showCoins() {
-            Console.Out.WriteLine("https://" + keys.publickey + "/service/show_coins?k=" + keys.privatekey);
-            var formContent = new FormUrlEncodedContent(new[]{ new KeyValuePair<string, string>("pk", keys.privatekey) });
+        public async Task showCoins()
+        {
+            Console.Out.WriteLine("https://" + keys.publickey + "/show_coins?k=" + keys.privatekey);
+            var formContent = new FormUrlEncodedContent(new[] { new KeyValuePair<string, string>("pk", keys.privatekey) });
             string json = "error";
-            try {
-                var showCoins = await cli.PostAsync("https://" + keys.publickey + "/service/show_coins.aspx", formContent);
+            try
+            {
+                var showCoins = await cli.PostAsync("https://" + keys.publickey + "/show_coins.aspx", formContent);
                 json = await showCoins.Content.ReadAsStringAsync();
-            } catch(HttpRequestException ex)
+                var bankTotals = JsonConvert.DeserializeObject<BankTotal>(json);
+                if (bankTotals.status == "coins_shown")
+                {
+                    onesInBank = bankTotals.ones;
+                    fivesInBank = bankTotals.fives;
+                    twentyFivesInBank = bankTotals.twentyfives;
+                    hundresInBank = bankTotals.hundreds;
+                    twohundredfiftiesInBank = bankTotals.twohundredfifties;
+                }
+                else
+                {
+                    Console.Out.WriteLine(bankTotals.status);
+                    var failResponse = JsonConvert.DeserializeObject<FailResponse>(json);
+                    Console.Out.WriteLine(failResponse.message);
+                }
+            }
+            catch (HttpRequestException ex)
             {
-                Console.Out.WriteLine("Exception" + ex.Message);
+                Console.Out.WriteLine("Exception: " + ex.Message);
+                Console.Out.WriteLine("Check your connection, or your public key");
+                return;
             }//end try catch
-            
-            
-            if (json.Contains("error"))
+            catch (JsonSerializationException ex)
             {
+                Console.Out.WriteLine(ex.Message);
                 Console.Out.WriteLine(json);
             }
-            else
+            catch (JsonReaderException ex)
             {
-                var bankTotals = JsonConvert.DeserializeObject<BankTotal>(json);
-                onesInBank = bankTotals.ones;
-                fivesInBank = bankTotals.fives;
-                twentyFivesInBank = bankTotals.twentyfives;
-                hundresInBank = bankTotals.hundreds;
-                twohundredfiftiesInBank = bankTotals.twohundredfifties;
-                //rawStackFromWithdrawal = GET(cloudBankURL, receiptNumber);
+                Console.Out.WriteLine(ex.Message);
+                Console.Out.WriteLine(json);
             }
-
         }//end show coins
 
 
-        public void loadStackFromFile(string filename)
+        public void loadStackFromFile(string filepath)
         {
-            //rawStackForDeposit = ReadFile( filename);
-            rawStackForDeposit = File.ReadAllText(filename);
+            rawStackForDeposit = File.ReadAllText(filepath);
         }
 
         public async Task sendStackToCloudBank( string toPublicURL)
         {
             string CloudBankFeedback = "";
             var formContent = new FormUrlEncodedContent(new[] { new KeyValuePair<string, string>("stack", rawStackForDeposit) });
-
             Console.Out.WriteLine("CloudBank request: " + toPublicURL + "/deposit_one_stack");
             Console.Out.WriteLine("Stack File: " + rawStackForDeposit);
-
             try
             {
-                var result_stack = await cli.PostAsync("https://"+toPublicURL + "/service/deposit_one_stack.aspx", formContent);
+                var result_stack = await cli.PostAsync("https://"+toPublicURL + "/deposit_one_stack.aspx", formContent);
                 CloudBankFeedback = await result_stack.Content.ReadAsStringAsync();
+                var cbf = JsonConvert.DeserializeObject<DepositResponse>(CloudBankFeedback);
+                Console.Out.WriteLine(cbf.message);
+                receiptNumber = cbf.receipt;
             }
-            catch (Exception ex)
+            catch (HttpRequestException ex)
+            {
+                Console.Out.WriteLine("Exception: " + ex.Message);
+                Console.Out.WriteLine("Check your connection, or your public key");
+                return;
+            }
+            catch (JsonSerializationException ex)
             {
                 Console.Out.WriteLine(ex.Message);
+                Console.Out.WriteLine(CloudBankFeedback);
+            }
+            catch (JsonReaderException ex)
+            {
+                Console.Out.WriteLine(ex.Message);
+                Console.Out.WriteLine(CloudBankFeedback);
             }
 
-            Console.Out.WriteLine("CloudBank Response: " + CloudBankFeedback);
-            var cbf = JsonConvert.DeserializeObject<Dictionary<string, string>>(CloudBankFeedback);
-            //rawReceipt = cbf["receipt"];
-            //receiptNumber = cbf["rn"];
-            receiptNumber = cbf["receipt"];
-            //Console.Out.WriteLine("Raw Receipt: " + rawReceipt);
         }//End send stack
 
 
@@ -113,11 +128,19 @@ namespace CloudBankTester
 
         public async Task getReceipt(string toPublicURL)
         {
-            Console.Out.WriteLine("Geting Receipt: " + "https://" + toPublicURL + "/service/" + keys.privatekey + "/Receipts/" + receiptNumber + ".json");
-            var result_receipt = await cli.GetAsync("https://" + toPublicURL + "/service/" + keys.privatekey + "/Receipts/" + receiptNumber + ".json");
-           
-            rawReceipt = await result_receipt.Content.ReadAsStringAsync();
-            Console.Out.WriteLine("Raw Receipt: " + rawReceipt);
+            Console.Out.WriteLine("Geting Receipt: " + "https://" + toPublicURL + "/" + keys.privatekey + "/Receipts/" + receiptNumber + ".json");
+            try
+            {
+                var result_receipt = await cli.GetAsync("https://" + toPublicURL + "/" + keys.privatekey + "/Receipts/" + receiptNumber + ".json");
+                rawReceipt = await result_receipt.Content.ReadAsStringAsync();
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.Out.WriteLine("Exception: " + ex.Message);
+                Console.Out.WriteLine("Check your connection, your public key, or you may not have made a Deposit yet.");
+                return;
+            }
+            
         }//End get Receipt
 
         public async Task getStackFromCloudBank( int amountToWithdraw)
@@ -125,9 +148,28 @@ namespace CloudBankTester
             totalCoinsWithdrawn = amountToWithdraw;
             var formContent = new FormUrlEncodedContent(new[] { new KeyValuePair<string,string>("amount",amountToWithdraw.ToString()),
                 new KeyValuePair<string, string>("pk", keys.privatekey)});
-            var result_stack = await cli.PostAsync("https://" + keys.publickey + "/service/withdraw_account.aspx", formContent);
+            try
+            {
+                var result_stack = await cli.PostAsync("https://" + keys.publickey + "/withdraw_account.aspx", formContent);
                 rawStackFromWithdrawal = await result_stack.Content.ReadAsStringAsync();
-                //rawStack = GET(cloudBankURL, receiptNumber);
+                var failResponse = JsonConvert.DeserializeObject<FailResponse>(rawStackFromWithdrawal);
+                Console.Out.WriteLine(failResponse.status);
+                Console.Out.WriteLine(failResponse.message);
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.Out.WriteLine("Exception: " + ex.Message);
+                Console.Out.WriteLine("Check your connection, or your public key");
+                return;
+            }
+            catch (JsonReaderException ex)
+            {
+                Console.Out.WriteLine(rawStackFromWithdrawal);
+            }
+            catch (JsonSerializationException ex)
+            {
+                Console.Out.WriteLine(rawStackFromWithdrawal);
+            }
         }//End get stack from cloudbank
 
 
@@ -170,35 +212,65 @@ namespace CloudBankTester
         {
             var formContent = new FormUrlEncodedContent(new[] { new KeyValuePair<string,string>("rn",receiptNumber),
                 new KeyValuePair<string, string>("pk", keys.privatekey)});
-            var result_receipt = await cli.PostAsync("https://" + keys.publickey + "/service/get_receipt.aspx", formContent);
-            string rawReceipt = await result_receipt.Content.ReadAsStringAsync();
-            if (rawReceipt.Contains("Error"))
+            try
             {
-                Console.Out.WriteLine(rawReceipt);
-            }
-            else
-            {
+                var result_receipt = await cli.PostAsync("https://" + keys.publickey + "/get_receipt.aspx", formContent);
+                string rawReceipt = await result_receipt.Content.ReadAsStringAsync();
                 var deserialReceipt = JsonConvert.DeserializeObject<Receipt>(rawReceipt);
                 for (int i = 0; i < deserialReceipt.rd.Length; i++)
                     if (deserialReceipt.rd[i].status == "authentic")
                         totalCoinsWithdrawn += getDenomination(deserialReceipt.rd[i].sn);
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.Out.WriteLine("Exception: " + ex.Message);
+                Console.Out.WriteLine("Check your connection, or your public key");
+                return;
+            }
+            catch(JsonReaderException ex)
+            {
+                Console.Out.WriteLine(ex.Message);
+                Console.Out.WriteLine(rawReceipt);
+                return;
+            }
+            catch(JsonSerializationException ex)
+            {
+                Console.Out.WriteLine(ex.Message);
+                Console.Out.WriteLine(rawReceipt);
+                return;
+            }
+
+
+            try
+            {
                 var formContent2 = new FormUrlEncodedContent(new[] { new KeyValuePair<string,string>("amount",totalCoinsWithdrawn.ToString()),
                 new KeyValuePair<string, string>("pk", keys.privatekey)});
-                var result_stack = await cli.PostAsync("https://"+keys.publickey + "/service/withdraw_account.aspx", formContent2);
+                var result_stack = await cli.PostAsync("https://" + keys.publickey + "/withdraw_account.aspx", formContent2);
                 rawStackFromWithdrawal = await result_stack.Content.ReadAsStringAsync();
-                //rawStackFromWithdrawal = GET(cloudBankURL, receiptNumber);
+                var failResponse = JsonConvert.DeserializeObject<FailResponse>(rawStackFromWithdrawal);
+                Console.Out.WriteLine(failResponse.status);
+                Console.Out.WriteLine(failResponse.message);
             }
+            catch (JsonReaderException ex)
+            {
+                Console.Out.WriteLine(rawStackFromWithdrawal);
+            }
+            catch (JsonSerializationException ex)
+            {
+                Console.Out.WriteLine(rawStackFromWithdrawal);
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.Out.WriteLine("Exception: " + ex.Message);
+                Console.Out.WriteLine("Check your connection, or your public key");
+            }
+
         }
 
         public string interpretReceipt()
         {
             string interpretation = "";
-            if (rawReceipt.Contains("Error"))
-            {
-                //parse out message
-                interpretation = rawReceipt;
-            }
-            else
+            try
             {
                 //tell the client how many coins were uploaded how many counterfeit, etc.
                 var deserialReceipt = JsonConvert.DeserializeObject<Receipt>(rawReceipt);
@@ -209,8 +281,17 @@ namespace CloudBankTester
                         totalCoins += getDenomination(deserialReceipt.rd[i].sn);
                 interpretation = "receipt number: " + deserialReceipt.receipt_id + " total authentic notes: " + totalNotes + " total authentic coins: " + totalCoins;
 
-
-            }//end if error
+            }catch(JsonSerializationException ex)
+            {
+                Console.Out.WriteLine(ex.Message);
+                interpretation = rawReceipt;
+            }
+            catch(JsonReaderException ex)
+            {
+                Console.Out.WriteLine(ex.Message);
+                interpretation = rawReceipt;
+            }
+           
             return interpretation;
         }
 

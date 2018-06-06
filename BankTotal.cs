@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace CloudBankTester
 {
-    class BankTotal
+    class BankTotal : IBankResponse
     {
 
         //Fields
@@ -21,6 +21,15 @@ namespace CloudBankTester
         [JsonProperty("twohundredfifties")]
         public int twohundredfifties { get; set; }
 
+        [JsonProperty("bank_server")]
+        public string bank_server { get; set; }
+
+        [JsonProperty("status")]
+        public string status { get; set; }
+
+        [JsonProperty("time")]
+        public string time { get; set; }
+
         //Constructors
         public BankTotal()
         {
@@ -36,6 +45,7 @@ namespace CloudBankTester
             this.twohundredfifties = twohundredfifties;
 
         }//end of constructor
+
 
     }
 }
