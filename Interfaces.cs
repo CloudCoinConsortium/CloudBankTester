@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿
 using System.Threading.Tasks;
 
 
@@ -18,16 +15,16 @@ namespace CloudBankTester
         int onesInBank { get; }
         int fivesInBank { get; }
         int twentyFivesInBank { get; }
-        int hundresInBank { get; }
+        int hundredsInBank { get; }
         int twohundredfiftiesInBank { get; }
         Task showCoins();
         void loadStackFromFile(string filepath);
         void saveStackToFile(string filepath);
         string getStackName();
-        Task sendStackToCloudBank(string toPublicUrl);
+        Task sendStackToCloudBank();
         Task getStackFromCloudBank(int amountToWithdraw);
-        Task getReceipt(string toPublicURL);
-        Task getReceiptFromCloudBank(string toPublicURL);
+        Task getReceipt();
+        Task getReceiptFromCloudBank();
         Task transferCloudCoins(string toPublicKey, int coinsToSend);
     }
 
@@ -37,13 +34,15 @@ namespace CloudBankTester
 
         string privatekey { get; set; }
 
-        string email { get; set; }
+        string account { get; set; }
     }
 
     interface IBankResponse
     {
         string bank_server { get; set; }
         string time { get; set; }
+        string status { get; set; }
+        string message { get; set; }
     }
 
 

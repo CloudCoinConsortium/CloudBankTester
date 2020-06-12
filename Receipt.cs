@@ -1,19 +1,15 @@
 using Newtonsoft.Json;
 namespace CloudBankTester
 {
-    public class Receipt
+    public class Receipt : BaseResponse
     {
         [JsonProperty("receipt_id")]
         public string receipt_id { get; set; }
 
-        [JsonProperty("time")]
-        public string time { get; set; }
 
         [JsonProperty("timezone")]
         public string timezone { get; set; }
 
-        [JsonProperty("bank_server")]
-        public string bank_server { get; set; }
 
         [JsonProperty("total_authentic")]
         public int total_authentic { get; set; }
@@ -28,7 +24,7 @@ namespace CloudBankTester
         public int total_lost { get; set; }
 
         [JsonProperty("receipt")]
-        public ReceiptDetail[] rd { get; set; }
+        public ReceiptDetail[] receipt_detail { get; set; }
 
     }
 }

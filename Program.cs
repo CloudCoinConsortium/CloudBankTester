@@ -14,18 +14,21 @@ namespace CloudBankTester
         //  public static String rootFolder = System.getProperty("user.dir") + File.separator +"bank" + File.separator ;
         public static String rootFolder = AppDomain.CurrentDomain.BaseDirectory;
         public static String prompt = "Start Mode> ";
-        public static String[] commandsAvailable = new String[] { "Load Bank Keys", "Show Coins", "Deposite Coin", "Withdraw Coins","Look at Receipt", "Write Check","Get Check","Connect To Trusted Trade", "Send Coins Over Trusted Trade", "quit" };
+        public static String[] commandsAvailable = new String[] { "Load Bank Keys", "Show Coins",
+            "Deposite Coin", "Withdraw Coins","Check Receipt", "Write Check","Get Check",
+            "Echo", "Get Print Welcome from Bank", "Send to a Skywallet from Bank", "Receive from Skywallet to Bank", "Transfer to another Skywallet", "quit" };
    //public static int timeout = 10000; // Milliseconds to wait until the request is ended. 
        // public static FileUtils fileUtils = new FileUtils(rootFolder, bank);
         public static Random myRandom = new Random();
-        public static string publicKey = "";
+        public static string url = "";
         public static string privateKey = "";
-        public static string email = "";
-        public static string sign = "Preston Linderman";
+        public static string account = "";
+        public static string sign = "Sean Worthington";
         public static BankKeys myKeys;
         private static CloudBankUtils receiptHolder;
-        private static HttpClient cli = new HttpClient();
-        private static TrustedTradeSocket tts = new TrustedTradeSocket("wss://escrow.cloudcoin.digital/ws/", 10, OnWord, OnStatusChange, OnReceive, OnProgress);
+        private static HttpClientHandler han;
+        private static HttpClient cli;
+        
 
 
 
@@ -33,6 +36,15 @@ namespace CloudBankTester
         /* MAIN METHOD */
         public static void Main(String[] args)
         {
+            han = new HttpClientHandler();
+            han.ServerCertificateCustomValidationCallback =
+                (httpRequestMessage, cert, cetChain, policyErrors) =>
+                {
+                    return true;
+                };
+
+            cli = new HttpClient(han);
+
             printWelcome();
             run().Wait(); // Makes all commands available and loops
             Console.Out.WriteLine("Thank you for using CloudBank Tester. Goodbye.");
@@ -59,7 +71,7 @@ namespace CloudBankTester
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.Out.Write(prompt);
                 Console.ForegroundColor = ConsoleColor.White;
-                int commandRecieved = reader.readInt(1,10);
+                int commandRecieved = reader.readInt(1,13);
 
 
                 switch (commandRecieved)
@@ -77,7 +89,7 @@ namespace CloudBankTester
                         await withdraw();
                         break;
                     case 5:
-                        await receipt2();
+                        await receipt();
                         break;
                     case 6:
                         await writeCheck();
@@ -86,12 +98,21 @@ namespace CloudBankTester
                         await GetCheck();
                         break;
                     case 8:
-                        await tts.Connect();
+                        await Echo();
                         break;
                     case 9:
-                        await SendCoinsTT();
+                        await bankPrintWelcome();
                         break;
                     case 10:
+                        receiptHolder = await sendtoSkywallet();
+                        break;
+                    case 11:
+                        receiptHolder = await recieveFromSkywallet();
+                        break;
+                    case 12:
+                        await transferBetweenSkywallets();
+                        break;
+                    case 13:
                         Console.Out.WriteLine("Goodbye!");
                         Environment.Exit(0);
                         break;
@@ -102,6 +123,29 @@ namespace CloudBankTester
             }// end while
         }// end run method
 
+        private static Task transferBetweenSkywallets()
+        {
+            throw new NotImplementedException();
+        }
+
+        private static async Task<CloudBankUtils> recieveFromSkywallet()
+        {
+            CloudBankUtils sender = new CloudBankUtils(myKeys, cli);
+            await sender.RecieveFromSkywallet();
+            return sender;
+        }
+
+        private static async Task bankPrintWelcome()
+        {
+            CloudBankUtils cbu = new CloudBankUtils(myKeys, cli);
+            await cbu.printWelcomeFromBank();
+        }
+
+        private static async Task Echo()
+        {
+            CloudBankUtils cbu = new CloudBankUtils(myKeys, cli);
+            await cbu.echoFromBank();
+        }
 
         public static void printWelcome()
         {
@@ -120,25 +164,26 @@ namespace CloudBankTester
 
         static void loadKeys()
         {
-            publicKey = "bank.CloudCoin.global";
-            privateKey = "0DECE3AF-43EC-435B-8C39-E2A5D0EA8676";
-            email = "Preston@ChicoHolo.com";
-            Console.Out.WriteLine("Public key is " + publicKey );
+            //insert own keys
+            url = "";
+            privateKey = "";
+            account = "";
+            Console.Out.WriteLine("Public key is " + url );
             Console.Out.WriteLine("Private key is " + privateKey);
-            Console.Out.WriteLine("Email is " + email);
-            myKeys = new BankKeys(publicKey, privateKey, email);
+            Console.Out.WriteLine("account is " + account);
+            myKeys = new BankKeys(url, privateKey, account);
         }
 
         /* Show coins will populate the CloudBankUtils with the totals of each denominations
          These totals are public properties that can be accessed */
         static async Task showCoins()
         {
-            CloudBankUtils cbu = new CloudBankUtils(myKeys);
+            CloudBankUtils cbu = new CloudBankUtils(myKeys, cli);
             await cbu.showCoins();
             Console.Out.WriteLine("Ones in our bank:" + cbu.onesInBank  );
             Console.Out.WriteLine("Five in our bank:" + cbu.fivesInBank);
             Console.Out.WriteLine("Twenty Fives in our bank:" + cbu.twentyFivesInBank);
-            Console.Out.WriteLine("Hundreds in our bank:" + cbu.hundresInBank );
+            Console.Out.WriteLine("Hundreds in our bank:" + cbu.hundredsInBank );
             Console.Out.WriteLine("Two Hundred Fifties in our bank:" + cbu.twohundredfiftiesInBank );
         }//end show coins
 
@@ -146,15 +191,25 @@ namespace CloudBankTester
         /* Deposit allow you to send a stack file to the CloudBank */
         static async Task<CloudBankUtils> depositAsync()
         {
-            CloudBankUtils sender = new CloudBankUtils( myKeys);
+            CloudBankUtils sender = new CloudBankUtils( myKeys, cli);
             Console.Out.WriteLine("What is the path to your stack file?");
             //string path = reader.readString();
             string path = AppDomain.CurrentDomain.BaseDirectory ;
             path += reader.readString();
             Console.Out.WriteLine("Loading " + path);
             sender.loadStackFromFile(path);
-            await sender.sendStackToCloudBank(publicKey);
-            await sender.getReceipt(publicKey);
+            await sender.sendStackToCloudBank();
+            return sender;
+        }//end deposit
+
+        static async Task<CloudBankUtils> sendtoSkywallet()
+        {
+            CloudBankUtils sender = new CloudBankUtils(myKeys, cli);
+            Console.Out.WriteLine("Which skywallet are you sending to?");
+            string sw = reader.readString();
+            Console.Out.WriteLine("How Much?");
+            int amount = reader.readInt();
+            await sender.SendToSkywallet(amount, sw);
             return sender;
         }//end deposit
 
@@ -163,28 +218,29 @@ namespace CloudBankTester
         {
             CloudBankUtils receiver;
             if (receiptHolder == null)
-                receiver = new CloudBankUtils(myKeys);
+                receiver = new CloudBankUtils(myKeys, cli);
             else
                 receiver = receiptHolder;
 
             Console.Out.WriteLine("How many CloudCoins are you withdrawing?");
             int amount = reader.readInt();
             await receiver.getStackFromCloudBank(amount);
-            receiver.saveStackToFile(AppDomain.CurrentDomain.BaseDirectory);
+            if (receiver.haveStackFromWithdrawal)
+                receiver.saveStackToFile(AppDomain.CurrentDomain.BaseDirectory);
+            else
+                Console.Out.WriteLine("Failed to withdraw");
         }//end deposit
-        static void receipt()
+        static async Task receipt()
         {
             if (receiptHolder == null)
                 Console.Out.WriteLine("There has not been a recent deposit. So no receipt can be shown.");
             else
-                Console.Out.WriteLine(receiptHolder.interpretReceipt());
-        }//end deposit
+            {
+                await receiptHolder.getReceipt();
+                Console.Out.WriteLine(receiptHolder.interpretReceipt().interpretation);
 
-        static async Task receipt2()
-        {
-            var x = new CloudBankUtils(myKeys);
-            await x.getReceipt(myKeys.publickey);
-        }
+            }   
+        }//end deposit
 
         static async Task writeCheck()
         {
@@ -194,7 +250,7 @@ namespace CloudBankTester
             string payto = reader.readString();
             Console.Out.WriteLine("Who is being Emailed?");
             string emailto = reader.readString();
-            var request = await cli.GetAsync("https://"+publicKey+"/write_check.aspx?pk=" + privateKey + "&action=email&amount="+amount+"&emailto="+emailto+"&payto="+payto+"&from="+email+"&signby="+sign);
+            var request = await cli.GetAsync("https://"+url+"/service/write_check?pk=" + privateKey + "&action=email&amount="+amount+"&emailto="+emailto+"&payto="+payto+"&from="+account+"&signby="+sign);
             string response = await request.Content.ReadAsStringAsync();
             Console.Out.WriteLine(response);
         }
@@ -203,47 +259,11 @@ namespace CloudBankTester
         {
             Console.Out.WriteLine("What is the Check's Id?");
             string id = reader.readString();
-            var request = await cli.GetAsync("https://" + publicKey + "/checks.aspx?id="+id+"&receive=json");
+            var request = await cli.GetAsync("https://" + url + "/service/checks?id="+id+"&receive=json");
             string response = await request.Content.ReadAsStringAsync();
             Console.Out.WriteLine(response);
         }
 
-        static async Task SendCoinsTT()
-        {
-            Console.Out.WriteLine("What is the recipients secred word?");
-            string word = reader.readString();
-            Console.Out.WriteLine("What is the path to your stack file?");
-            //string path = reader.readString();
-            string path = AppDomain.CurrentDomain.BaseDirectory;
-            path += reader.readString();
-            Console.Out.WriteLine("Loading " + path);
-            string stack = File.ReadAllText(path);
-            await tts.SendCoins(word, stack);
-        }
-
-        static bool OnProgress(string i)
-        {
-            Console.WriteLine("Progress" + i + "%");
-            return true;
-        }
-
-        static bool OnWord(string word)
-        {
-            tts.secretWord = word;
-            Console.WriteLine("word: " + word);
-            return true;
-        }
-
-        static bool OnReceive(string hash)
-        {
-            Console.WriteLine("https://escrow.cloudcoin.digital/cc.php?h=" + hash);
-            return true;
-        }
-
-        static bool OnStatusChange()
-        {
-            Console.WriteLine("Status Changed");
-            return true;
-        }
+        
     }
 }

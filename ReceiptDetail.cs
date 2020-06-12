@@ -5,11 +5,8 @@ namespace CloudBankTester
     public class ReceiptDetail
     {
         //Fields
-        [JsonProperty("nn")]
-        public int nn { get; set; }
-
-        [JsonProperty("sn")]
-        public int sn { get; set; }
+        [JsonProperty("nn.sn")]
+        public string nnsn { get; set; }
 
         [JsonProperty("status")]
         public string status { get; set; }
@@ -27,10 +24,9 @@ namespace CloudBankTester
 
         }//end of constructor
 
-        public ReceiptDetail(int nn, int sn, string status, string pown, string note)
+        public ReceiptDetail(string nnsn, string status, string pown, string note)
         {
-            this.nn = nn;
-            this.sn = sn;
+            this.nnsn = nnsn;
             this.status = status;
             this.pown = pown;
             this.note = note;
