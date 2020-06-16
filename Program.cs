@@ -110,7 +110,7 @@ namespace CloudBankTester
                         receiptHolder = await recieveFromSkywallet();
                         break;
                     case 12:
-                        await transferBetweenSkywallets();
+                        receiptHolder = await transferBetweenSkywallets();
                         break;
                     case 13:
                         Console.Out.WriteLine("Goodbye!");
@@ -123,17 +123,7 @@ namespace CloudBankTester
             }// end while
         }// end run method
 
-        private static Task transferBetweenSkywallets()
-        {
-            throw new NotImplementedException();
-        }
-
-        private static async Task<CloudBankUtils> recieveFromSkywallet()
-        {
-            CloudBankUtils sender = new CloudBankUtils(myKeys, cli);
-            await sender.RecieveFromSkywallet();
-            return sender;
-        }
+        
 
         private static async Task bankPrintWelcome()
         {
@@ -212,6 +202,24 @@ namespace CloudBankTester
             await sender.SendToSkywallet(amount, sw);
             return sender;
         }//end deposit
+
+        private static async Task<CloudBankUtils> transferBetweenSkywallets()
+        {
+            CloudBankUtils sender = new CloudBankUtils(myKeys, cli);
+            Console.Out.WriteLine("Which skywallet are you sending to?");
+            string sw = reader.readString();
+            Console.Out.WriteLine("How Much?");
+            int amount = reader.readInt();
+            await sender.TransferBetweenSkywallets(amount, sw);
+            return sender;
+        }
+
+        private static async Task<CloudBankUtils> recieveFromSkywallet()
+        {
+            CloudBankUtils sender = new CloudBankUtils(myKeys, cli);
+            await sender.RecieveFromSkywallet();
+            return sender;
+        }
 
 
         static async Task withdraw()

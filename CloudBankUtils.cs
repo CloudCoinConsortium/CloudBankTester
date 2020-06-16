@@ -437,7 +437,8 @@ namespace CloudBankTester
                 CloudBankFeedback = await result_stack.Content.ReadAsStringAsync();
                 var cbf = JsonConvert.DeserializeObject<BaseResponse>(CloudBankFeedback);
                 Console.Out.WriteLine(cbf.message);
-                
+                receiptNumber = cbf.receipt;
+
             }
             catch (HttpRequestException ex)
             {
@@ -477,6 +478,7 @@ namespace CloudBankTester
                 CloudBankFeedback = await result_stack.Content.ReadAsStringAsync();
                 var cbf = JsonConvert.DeserializeObject<BaseResponse>(CloudBankFeedback);
                 Console.Out.WriteLine(cbf.message);
+                receiptNumber = cbf.receipt;
 
             }
             catch (HttpRequestException ex)
@@ -501,7 +503,7 @@ namespace CloudBankTester
         /// <summary>
         /// 
         /// </summary>
-        public async Task TransferBetweenSkywallets(int amountToSend, string skywalletDestination)///////////////////////////
+        public async Task TransferBetweenSkywallets(int amountToSend, string skywalletDestination)
         {
             if (!haveKeys)
             {
@@ -518,6 +520,7 @@ namespace CloudBankTester
                 CloudBankFeedback = await result_stack.Content.ReadAsStringAsync();
                 var cbf = JsonConvert.DeserializeObject<BaseResponse>(CloudBankFeedback);
                 Console.Out.WriteLine(cbf.message);
+                receiptNumber = cbf.receipt;
 
             }
             catch (HttpRequestException ex)
