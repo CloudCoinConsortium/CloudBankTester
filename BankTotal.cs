@@ -22,11 +22,6 @@ namespace CloudBankTester
         public int twohundredfifties { get; set; }
 
 
-        [JsonProperty("account")]
-        public string account { get; set; }
-
-
-
         //Constructors
         public BankTotal()
         {
